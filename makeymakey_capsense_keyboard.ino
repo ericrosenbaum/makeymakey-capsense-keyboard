@@ -1,19 +1,22 @@
-int bounceThreshold = 1; // a press must last this many loop cycles (about 20ms each) before triggering. 
-                         // higher values make it less sensitive, fewer false triggers, higher latency
-
-int capThreshold = 1;    // this is proportional to the capacitance on the pin that will count as a press
-                         // it is units of a very small unit of time, in iterations through an unrolled loop
-                         // higher values make it less sensitive (i.e. require larger capacitance)
-                         
-const int outputPin = 14; // pin D14, leftmost pin on the output header
-
 #define NUM_INPUTS 18
 
+// keys
 // edit this array to change the keys pressed 
 int keys[NUM_INPUTS] = {
   'a','s','d','f','g','h',    // top of makey makey board (up, down, left, right, space, click)
   'q','w','e','r','t', 'y',   // left side of female header
   'z','x','c','v','b','n'     // right side of female header
+};
+
+// cap sense threshold for each pin
+// this number is proportional to the capacitance on the pin that will count as a press
+// it is units of a very small unit of time, in iterations through an unrolled loop
+// higher values make it less sensitive (i.e. require larger capacitance)
+
+int capThresholds[NUM_INPUTS] = {
+  1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1,
 };
 
 int pinNumbers[NUM_INPUTS] = {
@@ -22,16 +25,16 @@ int pinNumbers[NUM_INPUTS] = {
   23, 22, 21, 20, 19, 18   
 };
 
-int bounceCounter[NUM_INPUTS];    
+const int outputPin = 14; // pin D14, leftmost pin on the output header
+
 boolean pressed[NUM_INPUTS];
 
 void setup(){
   Keyboard.begin();
   for (int i=0; i<NUM_INPUTS; i++) {
-    bounceCounter[i] = 0;
     pressed[i] = false;
   }
-  
+
   pinMode(outputPin, OUTPUT);
   digitalWrite(outputPin, LOW);
 
@@ -39,40 +42,37 @@ void setup(){
 
 void loop() { 
   for (int i=0; i<NUM_INPUTS; i++) {                      // for each pin
-    if (readCapacitivePin(pinNumbers[i])>capThreshold){       // if we detect a touch on the pin
+    if (readCapacitivePin(pinNumbers[i])>capThresholds[i]){       // if we detect a touch on the pin
       if (!pressed[i]) {                                          // and if we're not already pressed
-        bounceCounter[i]++;                                           // increment the bounce counter
-        if(bounceCounter[i] > bounceThreshold){                       // if we're over the bounce threshold
-          Keyboard.press(keys[i]);                                        // send the key press
-          pressed[i] = true;                                              // remember it was pressed
-          bounceCounter[i]=0;                                             // reset the bounce counter
-        }
+        Keyboard.press(keys[i]);                                        // send the key press
+        pressed[i] = true;                                              // remember it was pressed
       }
-    } else {                                                  // if we don't a detect touch on the pin
+    } 
+    else {                                                  // if we don't a detect touch on the pin
       if (pressed[i]) {                                           // if this key was pressed before
         Keyboard.release(keys[i]);                                   // send the key release
         pressed[i] = false;                                          // remember we are not pressed
-        bounceCounter[i] = 0;                                        // reset the bounce counter
       }        
     }
   }
-  
+
   // OUTPUT
   // output pin D14 goes high while any input is pressed
- 
+
   boolean anythingIsPressed = false;
   for (int i=0; i<NUM_INPUTS; i++) {                      
     if (pressed[i]) {
       anythingIsPressed = true;
     }
   }
-  
+
   if (anythingIsPressed) {
     digitalWrite(outputPin, HIGH);
-  } else {
+  } 
+  else {
     digitalWrite(outputPin, LOW);
   }
-  
+
 }  
 
 
@@ -173,3 +173,4 @@ uint8_t readCapacitivePin(int pinToMeasure) {
 
   return cycles;
 }
+
